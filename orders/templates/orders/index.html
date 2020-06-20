@@ -1,0 +1,37 @@
+{% extends "orders/layout.html" %}
+{% load static %}
+
+{% block title %}Pizza{% endblock %}
+
+{% block content %}
+<div class="home">
+    <div class="contain mt-3">
+        <h1>Welcom to Online Pizza</h1>
+        <h3>Our Today's Offers</h3>
+    </div>
+
+    {% for i in products %}
+
+    <div class="card mt-3 bg-transparent">
+    <div class="card-body bg-secondary">
+        <div class="card-content bg-transparent">
+            <h4>{{ i.titel }}</h4>
+            <span>{{ i.description}}</span>
+            <h4>$ {{ i.price}}</h4>
+            <form  action="{% url 'index' %}" method="post">
+                {% csrf_token %}
+                <input class="food" type="text" name="name" value="{{ i.titel }}">
+                <input class="food" type="text" name="price" value="{{ i.price}}">
+                <input class="btn btn-primary button m-2" type="submit" value="Add to cart">
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+
+</div>
+
+
+
+{% endblock %}

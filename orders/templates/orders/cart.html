@@ -1,0 +1,23 @@
+{% extends "orders/layout.html" %}
+
+{% block title %}Pizza{% endblock %}
+
+{% block body %}
+    <h1>Pizza</h1>
+    <div id="carts">
+        <a href="{% url 'register' %}">Register</a>
+        <a href="{% url 'signin' %}">Login</a>
+        <a href="{% url 'signout' %}">Logout</a>
+
+            {% for item in food %}
+            <ul>
+                <li><span>{{ item.0.0 }}</span>  <span>{{ item.0.1 }}</span></li>
+                <a href="{% url 'delete' item.1 %}">Delete</a>
+
+            </ul>
+            {% endfor %}
+            <p>Total price is {{ price }}</p>
+            <a href="{% url 'purchasing' %}">Purchase</a>
+
+    </div>
+{% endblock %}
