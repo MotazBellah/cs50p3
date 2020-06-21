@@ -3,6 +3,20 @@
 {% block title %}Pizza{% endblock %}
 
 {% block content %}
+{% if messages %}
+
+    <ul id="flashMessage" class="messages">
+        {% for message in messages %}
+
+        <div class="alert alert-{{ message.tags }}">
+            <li  {% if message.tags %} class=" {{ message.tags }} " {% endif %}>
+                <span style="color:black;">{{ message }} </span>
+            </li>
+        </div>
+
+        {% endfor %}
+    </ul>
+    {% endif %}
     <div id="menu">
         <div class="row align-items-center h-100">
             <div class="right-side">
@@ -13,7 +27,7 @@
                         <input class="food bg-transparent" type="checkbox" name="food" value="{{ i.menu.item }}">
                         <span class="food-type bg-transparent">{{ i.menu.item }}</span>
 
-                        <form id="{{i.id}}" class="add-to-carts bg-transparent">
+                        <form id="{{i.id}}" class="add-to-carts bg-transparent" action="{% url 'menus' item_id %}" method="post">
                             {% csrf_token %}
                             <input class="food bg-transparent" id='{{item_id}}'type="text" name="food" value="{{ i.menu.item }}">
                         {% if i.menu.item == '1 topping' %}

@@ -1,9 +1,10 @@
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.shortcuts import render
+from django.contrib import messages
 from .models import Type, Size, Topping, Order, Menu, Purchase, Product
 from django.views.decorators.csrf import csrf_protect
 from django.core.mail import send_mail
@@ -67,9 +68,56 @@ def index(request):
 
 # Menu view that display the Menu based on the type
 def menus(request, item_id):
+    # Check if the user authenticated
+    if not request.user.is_authenticated:
+        return render(request, "orders/login.html", {"message":"Please Login"})
     items = Menu.objects.filter(type=item_id)
     food = [Size.objects.filter(menu=i) for i in items]
     category = Type.objects.all()
+
+    if request.method == "POST":
+        food = request.POST['food']
+        small = request.POST.getlist('add1')
+        topping_list = request.POST.getlist('topping1')
+        large = request.POST.getlist('add2')
+        item_type = Type.objects.get(pk=item_id)
+        if small:
+            price = float(small[0])
+        else:
+            price = float(large[0])
+        print('*********************')
+        print(food)
+        print(price)
+        print(item_type)
+        print(topping_list)
+        # print(topping_list)
+        print('*********************')
+        if ((food=='2 toppings' or food=='2 items') and len(topping_list) < 2):
+            messages.warning(request, 'Please select two toppings')
+            return HttpResponseRedirect(reverse("menus", args=(item_id,)))
+
+        if ((food=='3 toppings' or food=='3 items') and len(topping_list) < 3):
+            messages.warning(request, 'Please select three toppings')
+            return HttpResponseRedirect(reverse("menus", args=(item_id,)))
+
+        if (food=='Special' and len(topping_list) < 4):
+            messages.warning(request, 'Please select four/five toppings')
+            return HttpResponseRedirect(reverse("menus", args=(item_id,)))
+
+        # If the user select topping or items
+        # Update Order table and update the topping field
+        if food in ['1 topping', '1 item', '2 toppings', '2 items', '3 toppings', '3 items', 'Special']:
+            cart = Order(item=food, user=request.user, price=price, type=item_type)
+            cart.save()
+            for t in topping_list:
+                a = Topping.objects.get(item=t)
+                cart.topping.add(a)
+        else:
+            cart = Order(item=food, user=request.user, price=price, type=item_type)
+            cart.save()
+        messages.success(request, 'The food has been added to your cart')
+        return HttpResponseRedirect(reverse("menus", args=(item_id,)))
+
     context = {
         'food': [i[0] for i in food],
         'toppings': Topping.objects.all(),
@@ -87,6 +135,13 @@ def addFood(request):
     type = request.POST["id"]
     topping_list = request.POST.getlist("topping1")
     item_type = Type.objects.get(pk=type)
+
+    print('*********************')
+    print(food)
+    print(price)
+    print(type)
+    print(topping_list)
+    print('*********************')
 
     # If the selected food is in adds-ons,
     # Then make sure the user has already ordered some food items in the Cart
@@ -117,6 +172,7 @@ def addFood(request):
 
 # Display the cart view(Ordered food)
 def carts(request):
+
     # check if the user is authenticated
     if not request.user.is_authenticated:
         return render(request, "orders/login.html", {"message":None})
