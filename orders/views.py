@@ -104,6 +104,20 @@ def menus(request, item_id):
             messages.warning(request, 'Please select four/five toppings')
             return HttpResponseRedirect(reverse("menus", args=(item_id,)))
 
+        # If the selected food is in adds-ons,
+        # Then make sure the user has already ordered some food items in the Cart
+        # and prevent the user from select the same add_ons more the number of ordered food item
+        add_ons = ['+ Mushrooms', '+ Green Peppers', '+ Onions', 'Extra Cheese on any sub']
+        if food in add_ons:
+            items = Order.objects.filter(type=item_type, user=request.user)
+            subs = [i.item for i in items if i.item not in add_ons]
+            for add in add_ons:
+                if food == add:
+                    extra_add = [i.item for i in items if i.item == add]
+                    if len(subs) <= len(extra_add):
+                        messages.warning(request, "You do not have enough sub item, the extra should be equal to the selected sub items")
+                        return HttpResponseRedirect(reverse("menus", args=(item_id,)))
+
         # If the user select topping or items
         # Update Order table and update the topping field
         if food in ['1 topping', '1 item', '2 toppings', '2 items', '3 toppings', '3 items', 'Special']:
@@ -127,48 +141,6 @@ def menus(request, item_id):
 
     return render(request, "orders/menu.html", context)
 
-# Function to add food item to the user's cart
-def addFood(request):
-    # Get the food, price, food's ID, topping_list and food Type(Menu Type)
-    food = request.POST["food"]
-    price = request.POST["price"]
-    type = request.POST["id"]
-    topping_list = request.POST.getlist("topping1")
-    item_type = Type.objects.get(pk=type)
-
-    print('*********************')
-    print(food)
-    print(price)
-    print(type)
-    print(topping_list)
-    print('*********************')
-
-    # If the selected food is in adds-ons,
-    # Then make sure the user has already ordered some food items in the Cart
-    # and prevent the user from select the same add_ons more the number of ordered food item
-    add_ons = ['+ Mushrooms', '+ Green Peppers', '+ Onions', 'Extra Cheese on any sub']
-    if food in add_ons:
-        items = Order.objects.filter(type=item_type, user=request.user)
-        subs = [i.item for i in items if i.item not in add_ons]
-        for add in add_ons:
-            if food == add:
-                extra_add = [i.item for i in items if i.item == add]
-                if len(subs) <= len(extra_add):
-                    return HttpResponseRedirect(reverse("index"))
-
-    # If the user select topping or items
-    # Update Order table and update the topping field
-    if food in ['1 topping', '1 item', '2 toppings', '2 items', '3 toppings', '3 items', 'Special']:
-        cart = Order(item=food, user=request.user, price=price, type=item_type)
-        cart.save()
-        for t in topping_list[0].split(','):
-            a = Topping.objects.get(item=t)
-            cart.topping.add(a)
-    else:
-        cart = Order(item=food, user=request.user, price=price, type=item_type)
-        cart.save()
-
-    return HttpResponseRedirect(reverse("index"))
 
 # Display the cart view(Ordered food)
 def carts(request):
@@ -218,6 +190,7 @@ def payments(request):
         # Use sendgrid to send the message to the user's email
         try:
             send_email_SendGrid(request.user.email, email_message)
+            print(request.user.email)
         except Exception as e:
             print(e)
             pass
@@ -260,13 +233,16 @@ def register(request):
         password2 = request.POST["password2"]
         if not password == password2:
             return render(request, "orders/register.html", {"message":"Passwords don't match."})
-
-        user = User.objects.create_user(username, email, password)
-        user.username = username
-        user.email = email
-        user.first_name = first_name
-        user.last_name = last_name
-        user.save()
+        try:
+            user = User.objects.create_user(username, email, password)
+            user.username = username
+            user.email = email
+            user.first_name = first_name
+            user.last_name = last_name
+            user.save()
+        except Exception as e:
+            print(e)
+            return render(request, "orders/register.html", {"message":"The user already exist."})
 
         return render(request, "orders/login.html", {"message":"Registered. You can log in now."})
     return render(request, "orders/register.html")
