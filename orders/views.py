@@ -16,9 +16,12 @@ from sendgrid.helpers.mail import *
 # Get stripe API
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+
 # Use SendGrid API to send email to the user after payment done
 def send_email_SendGrid(user_email, message):
-    sg = sendgrid.SendGridAPIClient('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')
+    # sg = sendgrid.SendGridAPIClient('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')
+    sg = sendgrid.SendGridAPIClient('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')
+
     data = {
       "personalizations": [
         {
@@ -41,6 +44,8 @@ def send_email_SendGrid(user_email, message):
       ]
     }
     response = sg.client.mail.send.post(request_body=data)
+    print(response.status_code)
+    print(response)
 
 # Display the main page
 def index(request):
@@ -231,8 +236,13 @@ def register(request):
         email = request.POST["email"]
         password = request.POST["password"]
         password2 = request.POST["password2"]
+        # Check if the password don't match
         if not password == password2:
             return render(request, "orders/register.html", {"message":"Passwords don't match."})
+        # Check if the email exist
+        exist_email = User.objects.filter(email=email)
+        if exist_email:
+            return render(request, "orders/register.html", {"message":"The user is already exist."})
         try:
             user = User.objects.create_user(username, email, password)
             user.username = username
@@ -242,7 +252,7 @@ def register(request):
             user.save()
         except Exception as e:
             print(e)
-            return render(request, "orders/register.html", {"message":"The user already exist."})
+            return render(request, "orders/register.html", {"message":"The user is already exist."})
 
         return render(request, "orders/login.html", {"message":"Registered. You can log in now."})
     return render(request, "orders/register.html")
