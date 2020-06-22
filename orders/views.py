@@ -19,8 +19,7 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 # Use SendGrid API to send email to the user after payment done
 def send_email_SendGrid(user_email, message):
-    # sg = sendgrid.SendGridAPIClient('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')
-    sg = sendgrid.SendGridAPIClient('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')
+    sg = sendgrid.SendGridAPIClient('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')
 
     data = {
       "personalizations": [
@@ -44,8 +43,6 @@ def send_email_SendGrid(user_email, message):
       ]
     }
     response = sg.client.mail.send.post(request_body=data)
-    print(response.status_code)
-    print(response)
 
 # Display the main page
 def index(request):
@@ -90,13 +87,7 @@ def menus(request, item_id):
             price = float(small[0])
         else:
             price = float(large[0])
-        print('*********************')
-        print(food)
-        print(price)
-        print(item_type)
-        print(topping_list)
-        # print(topping_list)
-        print('*********************')
+
         if ((food=='2 toppings' or food=='2 items') and len(topping_list) < 2):
             messages.warning(request, 'Please select two toppings')
             return HttpResponseRedirect(reverse("menus", args=(item_id,)))
@@ -195,7 +186,6 @@ def payments(request):
         # Use sendgrid to send the message to the user's email
         try:
             send_email_SendGrid(request.user.email, email_message)
-            print(request.user.email)
         except Exception as e:
             print(e)
             pass
